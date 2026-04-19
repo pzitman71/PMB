@@ -178,46 +178,71 @@ if tasks_file.exists():
 print("[STEP 6] Checking birthdays...")
 birthdays = []
 
-# Try Google Calendar MCP first
 try:
     import anthropic
+    import json as json_module
+
     client = anthropic.Anthropic()
 
-    # Query paul.zitman@devoteam.com for birthday/anniversary events
-    # Look for all-day events and events with birthday keywords in title or description
-    try:
-        # Use list_events to get all events for today
-        events_response = client.beta.tools.google_calendar.list_events(
-            calendar_id="paul.zitman@devoteam.com",
-            time_min=f"{TODAY}T00:00:00Z",
-            time_max=f"{TODAY}T23:59:59Z",
-            all_events=True
-        )
+    # Use Claude with tool_use to fetch calendar events
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        tools=[
+            {
+                "type": "builtin_tool",
+                "name": "google_calendar_list_events",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "calendar_id": {"type": "string"},
+                        "time_min": {"type": "string"},
+                        "time_max": {"type": "string"}
+                    },
+                    "required": ["calendar_id", "time_min", "time_max"]
+                }
+            }
+        ],
+        messages=[
+            {
+                "role": "user",
+                "content": f"List all events from calendar paul.zitman@devoteam.com for today ({TODAY}) in ISO format. Return only valid JSON with the events list."
+            }
+        ]
+    )
 
-        if events_response and hasattr(events_response, 'items'):
-            for event in events_response.items:
-                # Check if it's an all-day event or has birthday keywords
-                is_allday = event.get('start', {}).get('date') is not None
-                title = event.get('summary', '').lower()
-                description = event.get('description', '').lower() if event.get('description') else ''
+    # Parse response for calendar events
+    if response.content:
+        for block in response.content:
+            if hasattr(block, 'text'):
+                try:
+                    # Try to extract JSON from response
+                    text = block.text
+                    # Look for JSON array in response
+                    if '[' in text and ']' in text:
+                        json_str = text[text.find('['):text.rfind(']')+1]
+                        events_data = json_module.loads(json_str)
 
-                birthday_keywords = ['jarig', 'verjaardag', 'birthday']
-                has_birthday_keyword = any(kw in title or kw in description for kw in birthday_keywords)
+                        for event in events_data:
+                            # Check if it's an all-day event with birthday keywords
+                            is_allday = event.get('start', {}).get('date') is not None
+                            title = event.get('summary', '').lower()
+                            description = event.get('description', '').lower() if event.get('description') else ''
 
-                # Only include birthday events (all-day with birthday keywords)
-                if is_allday and has_birthday_keyword:
-                    name = event.get('summary', '').replace("'s birthday", "").replace("'s verjaardag", "").strip()
-                    birthdays.append({"name": name})
+                            birthday_keywords = ['jarig', 'verjaardag', 'birthday']
+                            has_birthday_keyword = any(kw in title or kw in description for kw in birthday_keywords)
 
-        if birthdays:
-            print(f"Found {len(birthdays)} birthday(s) in Google Calendar")
-    except Exception as e:
-        print(f"Google Calendar birthday query failed: {e}, falling back to local file")
+                            if is_allday and has_birthday_keyword:
+                                name = event.get('summary', '').replace("'s birthday", "").replace("'s verjaardag", "").strip()
+                                birthdays.append({"name": name})
 
-except ImportError:
-    print("Anthropic SDK not available, will use local birthdays file")
+                        if birthdays:
+                            print(f"Found {len(birthdays)} birthday(s) in Google Calendar")
+                except Exception as parse_err:
+                    print(f"Could not parse calendar response: {parse_err}")
+
 except Exception as e:
-    print(f"Google Calendar API error: {e}")
+    print(f"Google Calendar query failed: {e}")
 
 # Fall back to local birthdays file if no Google Calendar results
 if not birthdays:
@@ -239,53 +264,69 @@ meetings = []
 
 try:
     import anthropic
+    import json as json_module
+
     client = anthropic.Anthropic()
 
-    # Query paul.zitman@devoteam.com for all events today
-    try:
-        events_response = client.beta.tools.google_calendar.list_events(
-            calendar_id="paul.zitman@devoteam.com",
-            time_min=f"{TODAY}T00:00:00Z",
-            time_max=f"{TODAY}T23:59:59Z"
-        )
+    # Use Claude with tool_use to fetch calendar events
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2048,
+        tools=[
+            {
+                "type": "builtin_tool",
+                "name": "google_calendar_list_events",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "calendar_id": {"type": "string"},
+                        "time_min": {"type": "string"},
+                        "time_max": {"type": "string"}
+                    },
+                    "required": ["calendar_id", "time_min", "time_max"]
+                }
+            }
+        ],
+        messages=[
+            {
+                "role": "user",
+                "content": f"List all NON-ALLDAY events from calendar paul.zitman@devoteam.com for today ({TODAY}). Return as JSON array with event start time (HH:MM), summary, and location."
+            }
+        ]
+    )
 
-        if events_response and hasattr(events_response, 'items'):
-            for event in events_response.items:
-                # Skip all-day events (birthdays handled separately)
-                start = event.get('start', {})
-                if start.get('date'):  # All-day event
-                    continue
+    # Parse response for calendar events
+    if response.content:
+        for block in response.content:
+            if hasattr(block, 'text'):
+                try:
+                    text = block.text
+                    # Look for JSON array in response
+                    if '[' in text and ']' in text:
+                        json_str = text[text.find('['):text.rfind(']')+1]
+                        events_data = json_module.loads(json_str)
 
-                # Get event details
-                start_time = start.get('dateTime', '')
-                end_time = event.get('end', {}).get('dateTime', '')
-                title = event.get('summary', 'Untitled')
-                location = event.get('location', '')
+                        for event in events_data:
+                            time_str = event.get('time', event.get('start', ''))
+                            title = event.get('summary', event.get('title', 'Untitled'))
+                            location = event.get('location', '')
 
-                # Extract time from ISO format (HH:MM)
-                if start_time:
-                    start_hm = start_time.split('T')[1][:5] if 'T' in start_time else start_time
-                else:
-                    start_hm = ''
+                            meeting_str = f"{time_str} — {title}"
+                            if location:
+                                meeting_str += f" @ {location}"
 
-                meeting_str = f"{start_hm} — {title}"
-                if location:
-                    meeting_str += f" @ {location}"
+                            meetings.append(meeting_str)
 
-                meetings.append(meeting_str)
+                        # Sort meetings by time
+                        meetings.sort()
 
-            # Sort by start time
-            meetings.sort()
+                        if meetings:
+                            print(f"Found {len(meetings)} meeting(s) in Google Calendar")
+                except Exception as parse_err:
+                    print(f"Could not parse calendar events: {parse_err}")
 
-            if meetings:
-                print(f"Found {len(meetings)} meeting(s) in Google Calendar")
-    except Exception as e:
-        print(f"Google Calendar events query failed: {e}")
-
-except ImportError:
-    print("Anthropic SDK not available for calendar events")
 except Exception as e:
-    print(f"Calendar API error: {e}")
+    print(f"Calendar events query failed: {e}")
 
 # STEP 8: Generate HTML
 print("[STEP 8] Generating HTML...")
