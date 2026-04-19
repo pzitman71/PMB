@@ -336,10 +336,17 @@ try:
     subprocess.run(["git", "config", "user.name", "PaulsMorningBrief Agent"], check=False)
     subprocess.run(["git", "add", "PMB/"], check=True)
     subprocess.run(["git", "commit", "-m", f"Morning Brief {TODAY}"], check=True)
-    subprocess.run(["git", "push", "origin", "HEAD"], check=True)
-    print("✓ Files pushed to GitHub")
+    # Push to main branch (GitHub's default)
+    subprocess.run(["git", "push", "origin", "master:main"], check=True)
+    print("✓ Files pushed to GitHub (main branch)")
 except subprocess.CalledProcessError as e:
     print(f"Git error: {e}")
+    # Try pushing to master as fallback
+    try:
+        subprocess.run(["git", "push", "origin", "master"], check=True)
+        print("✓ Files pushed to master branch")
+    except:
+        print("Warning: Could not push to GitHub")
 
 print(f"\n✓ Morning brief complete for {TODAY}")
 print(f"✓ Output: {HTML_FILE}")
