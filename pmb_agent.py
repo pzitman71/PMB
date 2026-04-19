@@ -55,9 +55,26 @@ try:
     if result.returncode == 0 and result.stdout:
         english_weather = result.stdout.decode('utf-8', errors='replace').strip()
 
-        # Add space before wind speed (e.g. "↓24km/h" → "↓ 24km/h")
         import re
-        english_weather = re.sub(r'(↓|↑|→|←|↘|↙|↗|↖)(\d)', r'\1 \2', english_weather)
+
+        # Map wind direction arrows to abbreviations
+        direction_map = {
+            '↓': 'Z',      # South (Zuid)
+            '↑': 'N',      # North (Noord)
+            '→': 'O',      # East (Oost)
+            '←': 'W',      # West
+            '↘': 'ZO',     # Southeast (Zuidoost)
+            '↙': 'ZW',     # Southwest (Zuidwest)
+            '↗': 'NO',     # Northeast (Noordoost)
+            '↖': 'NW'      # Northwest (Noordwest)
+        }
+
+        # Replace arrows with direction abbreviations, keeping space and speed
+        for arrow, abbr in direction_map.items():
+            english_weather = english_weather.replace(arrow, abbr)
+
+        # Add space before wind speed (e.g. "Z24km/h" → "Z 24km/h")
+        english_weather = re.sub(r'([A-Z]{1,2})(\d)', r'\1 \2', english_weather)
 
         # Translate weather conditions to Dutch
         translations = {
@@ -73,7 +90,8 @@ try:
             "Foggy": "Mistig",
             "Windy": "Winderig",
             "feels like": "Gevoelstemperatuur",
-            "humidity": "Luchtvochtigheid"
+            "humidity": "Luchtvochtigheid",
+            "wind": "Wind"
         }
 
         weather_short = english_weather
@@ -82,17 +100,6 @@ try:
 
         # Capitalize location name
         weather_short = weather_short.replace("almere-buiten:", "Almere-Buiten:")
-
-        # Fix spacing around wind direction and speed (fix all numbers)
-        import re
-        weather_short = re.sub(r'↓\s*\((Zuid)\)(\d)', r'↓ (Zuid) \2', weather_short)
-        weather_short = re.sub(r'↑\s*\((Noord)\)(\d)', r'↑ (Noord) \2', weather_short)
-        weather_short = re.sub(r'→\s*\((Oost)\)(\d)', r'→ (Oost) \2', weather_short)
-        weather_short = re.sub(r'←\s*\((West)\)(\d)', r'← (West) \2', weather_short)
-        weather_short = re.sub(r'↘\s*\((Zuidoost)\)(\d)', r'↘ (Zuidoost) \2', weather_short)
-        weather_short = re.sub(r'↙\s*\((Zuidwest)\)(\d)', r'↙ (Zuidwest) \2', weather_short)
-        weather_short = re.sub(r'↗\s*\((Noordoost)\)(\d)', r'↗ (Noordoost) \2', weather_short)
-        weather_short = re.sub(r'↖\s*\((Noordwest)\)(\d)', r'↖ (Noordwest) \2', weather_short)
 
         print(f"Weer: {weather_short}")
 except Exception as e:
