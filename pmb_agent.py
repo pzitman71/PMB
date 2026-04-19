@@ -22,9 +22,23 @@ INPUT_FOLDER = Path("Input")
 PMB_FOLDER.mkdir(exist_ok=True)
 INPUT_FOLDER.mkdir(exist_ok=True)
 
-# Get today's date
+# Get today's date (Dutch format)
 TODAY = datetime.now().strftime("%Y-%m-%d")
-FULLDATE = datetime.now().strftime("%A, %B %d %Y")
+
+# Dutch month names
+DUTCH_MONTHS = {
+    1: "januari", 2: "februari", 3: "maart", 4: "april", 5: "mei", 6: "juni",
+    7: "juli", 8: "augustus", 9: "september", 10: "oktober", 11: "november", 12: "december"
+}
+DUTCH_DAYS = {
+    0: "Maandag", 1: "Dinsdag", 2: "Woensdag", 3: "Donderdag",
+    4: "Vrijdag", 5: "Zaterdag", 6: "Zondag"
+}
+
+now = datetime.now()
+day_name = DUTCH_DAYS[now.weekday()]
+month_name = DUTCH_MONTHS[now.month]
+FULLDATE = f"{day_name}, {now.day} {month_name} {now.year}"
 HTML_FILE = PMB_FOLDER / f"{TODAY}_morning_brief.html"
 
 print(f"Generating morning brief for {FULLDATE}...")
@@ -55,10 +69,16 @@ habits = []
 habits_file = INPUT_FOLDER / "habits.json"
 if habits_file.exists():
     try:
-        with open(habits_file) as f:
+        with open(habits_file, encoding='utf-8') as f:
             habits = json.load(f)
     except Exception as e:
         print(f"Error reading habits: {e}")
+        habits = [
+            {"name": "Run", "target": "12km (90 min)", "icon": "🏃"},
+            {"name": "Bike", "target": "12km (45 min)", "icon": "🚴"},
+            {"name": "Drink water", "target": "8 glasses", "icon": "💧"},
+            {"name": "Read", "target": "20 pages", "icon": "📖"}
+        ]
 else:
     habits = [
         {"name": "Run", "target": "12km (90 min)", "icon": "🏃"},
@@ -133,7 +153,7 @@ tasks = []
 tasks_file = INPUT_FOLDER / "tasks.json"
 if tasks_file.exists():
     try:
-        with open(tasks_file) as f:
+        with open(tasks_file, encoding='utf-8') as f:
             all_tasks = json.load(f)
             for task in all_tasks:
                 due = task.get("due")
