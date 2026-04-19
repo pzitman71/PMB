@@ -411,6 +411,11 @@ except subprocess.CalledProcessError as e:
 
 print(f"\n[OK] Morning brief complete for {TODAY}")
 print(f"[OK] Output: {HTML_FILE}")
-print("\nTo sync to local folder:")
-print("  cd C:\\Users\\Paul\\Claude\\PMB")
-print("  git pull")
+
+# Try to open in browser
+full_path = Path("C:\\Users\\Paul\\Claude\\PMB") / HTML_FILE
+try:
+    subprocess.run(["start", str(full_path)], shell=True, check=False)
+    print(f"[OK] Opening in browser: {full_path}")
+except Exception as e:
+    print(f"To open in browser: start \"{full_path}\"")
