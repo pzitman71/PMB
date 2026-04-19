@@ -204,13 +204,7 @@ If calendar MCP tools are not available, write:
 
 ## STEP 9 — Create the HTML morning brief
 
-Create the output directory and write the HTML file:
-
-```bash
-mkdir -p PMB/$TODAY
-```
-
-Write a complete, self-contained HTML file to `PMB/$TODAY/morning_brief.html`.
+Write a complete, self-contained HTML file to `PMB/${TODAY}_morning_brief.html`.
 All CSS must be inline (no external files). The design must be professional and clean.
 
 ### Required layout:
