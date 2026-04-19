@@ -43,17 +43,48 @@ HTML_FILE = PMB_FOLDER / f"{TODAY}_morning_brief.html"
 
 print(f"Generating morning brief for {FULLDATE}...")
 
-# STEP 1: Weather (short format only, no ASCII art)
+# STEP 1: Weather (Dutch, from wttr.in)
 print("[STEP 1] Fetching weather...")
 weather_short = "Weer niet beschikbaar"
 try:
+    # Fetch in English first, then translate
     result = subprocess.run(
         ["curl", "-s", "https://wttr.in/Almere-Buiten?format=%l:+%C,+%t+(feels+like+%f),+wind+%w,+humidity+%h"],
         capture_output=True, timeout=5
     )
     if result.returncode == 0 and result.stdout:
-        weather_short = result.stdout.decode('utf-8', errors='replace').strip()
-        print(f"Weather: {weather_short}")
+        english_weather = result.stdout.decode('utf-8', errors='replace').strip()
+
+        # Translate weather conditions to Dutch
+        translations = {
+            "Partly cloudy": "Bewolkt",
+            "Cloudy": "Bewolkt",
+            "Clear": "Helder",
+            "Sunny": "Zonnig",
+            "Rainy": "Regenachtig",
+            "Patchy rain": "Wisselende regen",
+            "Rain": "Regen",
+            "Snow": "Sneeuw",
+            "Thunderstorm": "Onweer",
+            "Foggy": "Mistig",
+            "Windy": "Winderig"
+        }
+
+        weather_short = english_weather
+        for en, nl in translations.items():
+            weather_short = weather_short.replace(en, nl)
+
+        # Translate direction indicators
+        weather_short = weather_short.replace("↑", "↑ (Noord)")
+        weather_short = weather_short.replace("↘", "↘ (Zuidoost)")
+        weather_short = weather_short.replace("↓", "↓ (Zuid)")
+        weather_short = weather_short.replace("↙", "↙ (Zuidwest)")
+        weather_short = weather_short.replace("→", "→ (Oost)")
+        weather_short = weather_short.replace("←", "← (West)")
+        weather_short = weather_short.replace("↗", "↗ (Noordoost)")
+        weather_short = weather_short.replace("↖", "↖ (Noordwest)")
+
+        print(f"Weer: {weather_short}")
 except Exception as e:
     print(f"Weather fetch error: {e}")
 
@@ -144,9 +175,14 @@ if birthdays_file.exists():
     except Exception as e:
         print(f"Error reading birthdays: {e}")
 
-# STEP 7: Calendar events (placeholder - would use Google Calendar MCP in real agent)
-print("[STEP 7] Calendar events (MCP not available in local mode)")
+# STEP 7: Calendar events from paul.zitman@devoteam.com
+print("[STEP 7] Fetching calendar events from paul.zitman@devoteam.com...")
+# Note: In full implementation with Google Calendar MCP, query paul.zitman@devoteam.com
+# for all events today and any weather-related events
 meetings = []
+# TODO: When Google Calendar MCP is available, query for:
+# - All events for the day
+# - Weather-related events (if any) to supplement wttr.in data
 
 # STEP 8: Generate HTML
 print("[STEP 8] Generating HTML...")
