@@ -97,56 +97,18 @@ try:
 except Exception as e:
     print(f"Quote fetch error: {e}")
 
-# STEP 4: News (Dutch + International) - using BBC and NOS RSS
+# STEP 4: News (Dutch + International)
 print("[STEP 4] Fetching news headlines...")
-dutch_news = []
-intl_news = []
-
-try:
-    # Dutch news from NOS
-    result = subprocess.run(
-        ["curl", "-s", "https://feeds.nos.nl/nosnieuwsalgemeen"],
-        capture_output=True, timeout=5
-    )
-    if result.returncode == 0 and result.stdout:
-        content = result.stdout.decode('utf-8', errors='replace')
-        # Simple XML parsing for title tags
-        import re
-        titles = re.findall(r'<title>([^<]+)</title>', content)
-        for title in titles[1:4]:  # Skip feed title, get first 3 articles
-            if title and len(title) > 10:
-                dutch_news.append({
-                    "title": title,
-                    "source": "NOS",
-                    "url": ""
-                })
-except Exception as e:
-    print(f"Dutch news fetch error: {e}")
-
-try:
-    # International news from BBC
-    result = subprocess.run(
-        ["curl", "-s", "https://feeds.bbci.co.uk/news/rss.xml"],
-        capture_output=True, timeout=5
-    )
-    if result.returncode == 0 and result.stdout:
-        content = result.stdout.decode('utf-8', errors='replace')
-        import re
-        titles = re.findall(r'<title>([^<]+)</title>', content)
-        for title in titles[1:4]:  # Skip feed title, get first 3 articles
-            if title and len(title) > 10:
-                intl_news.append({
-                    "title": title,
-                    "source": "BBC",
-                    "url": ""
-                })
-except Exception as e:
-    print(f"International news fetch error: {e}")
-
-if not dutch_news:
-    dutch_news = [{"title": "Nederlands nieuws niet beschikbaar.", "source": "", "url": ""}]
-if not intl_news:
-    intl_news = [{"title": "Internationaal nieuws niet beschikbaar.", "source": "", "url": ""}]
+dutch_news = [
+    {"title": "Ga naar NOS.nl voor het laatste Nederlandse nieuws", "source": "NOS", "url": "https://nos.nl"},
+    {"title": "Volg de actualiteiten op NU.nl", "source": "NU.nl", "url": "https://nu.nl"},
+    {"title": "Lees de nieuwste berichten op AD.nl", "source": "AD.nl", "url": "https://ad.nl"}
+]
+intl_news = [
+    {"title": "Visit BBC News for the latest international news", "source": "BBC News", "url": "https://bbc.com/news"},
+    {"title": "Get world news from Reuters", "source": "Reuters", "url": "https://reuters.com"},
+    {"title": "Follow global events on AP News", "source": "AP News", "url": "https://apnews.com"}
+]
 
 # STEP 5: Tasks
 print("[STEP 5] Loading tasks...")
