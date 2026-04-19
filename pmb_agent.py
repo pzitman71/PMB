@@ -5,10 +5,16 @@ Generates a daily morning brief with weather, news, habits, quote, birthdays, me
 """
 
 import os
+import sys
+import io
 import json
 import subprocess
 from datetime import datetime
 from pathlib import Path
+
+# Fix Windows console encoding
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # Configuration
 PMB_FOLDER = Path("PMB")
@@ -24,7 +30,7 @@ HTML_FILE = PMB_FOLDER / f"{TODAY}_morning_brief.html"
 print(f"Generating morning brief for {FULLDATE}...")
 
 # STEP 1: Weather
-print("\n[STEP 1] Fetching weather...")
+print("[STEP 1] Fetching weather...")
 weather_short = "Weather unavailable"
 weather_full = "Unable to fetch forecast"
 try:
@@ -32,13 +38,13 @@ try:
         ["curl", "-s", "https://wttr.in/Almere-Buiten?format=%l:+%C,+%t+(feels+like+%f),+wind+%w,+humidity+%h"],
         capture_output=True, text=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout.strip():
+    if result.returncode == 0 and result.stdout and result.stdout.strip():
         weather_short = result.stdout.strip()
     result2 = subprocess.run(
         ["curl", "-s", "https://wttr.in/Almere-Buiten?1"],
         capture_output=True, text=True, timeout=5
     )
-    if result2.returncode == 0 and result2.stdout.strip():
+    if result2.returncode == 0 and result2.stdout and result2.stdout.strip():
         weather_full = result2.stdout.strip()
 except Exception as e:
     print(f"Weather fetch error: {e}")
@@ -61,43 +67,65 @@ else:
         {"name": "Read", "target": "20 pages", "icon": "📖"}
     ]
 
-# STEP 3: Quote
+# STEP 3: Quote (Dutch)
 print("[STEP 3] Fetching motivational quote...")
-quote = "The only way to do great work is to love what you do."
+quote = "De enige manier om geweldig werk te verrichten, is het werk waarvan je houdt."
 author = "Steve Jobs"
 try:
     result = subprocess.run(
         ["curl", "-s", "https://api.quotable.io/random"],
         capture_output=True, text=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout.strip():
+    if result.returncode == 0 and result.stdout and result.stdout.strip():
         data = json.loads(result.stdout)
         quote = data.get("content", quote)
         author = data.get("author", author)
 except Exception as e:
     print(f"Quote fetch error: {e}")
 
-# STEP 4: News
+# STEP 4: News (Dutch + International)
 print("[STEP 4] Fetching news headlines...")
-news_items = []
+dutch_news = []
+intl_news = []
+
 try:
+    # Dutch news
     result = subprocess.run(
-        ["curl", "-s", "https://newsapi.org/v2/top-headlines?country=nl&sortBy=popularity&pageSize=5"],
+        ["curl", "-s", "https://newsapi.org/v2/top-headlines?country=nl&sortBy=popularity&pageSize=3"],
         capture_output=True, text=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout.strip():
+    if result.returncode == 0 and result.stdout and result.stdout.strip():
         data = json.loads(result.stdout)
-        for article in data.get("articles", [])[:5]:
-            news_items.append({
+        for article in data.get("articles", [])[:3]:
+            dutch_news.append({
                 "title": article.get("title", ""),
                 "source": article.get("source", {}).get("name", "Unknown"),
                 "url": article.get("url", "")
             })
 except Exception as e:
-    print(f"News fetch error: {e}")
+    print(f"Dutch news fetch error: {e}")
 
-if not news_items:
-    news_items = [{"title": "Headlines temporarily unavailable.", "source": "", "url": ""}]
+try:
+    # International news
+    result = subprocess.run(
+        ["curl", "-s", "https://newsapi.org/v2/top-headlines?language=en&sortBy=popularity&pageSize=3"],
+        capture_output=True, text=True, timeout=5
+    )
+    if result.returncode == 0 and result.stdout and result.stdout.strip():
+        data = json.loads(result.stdout)
+        for article in data.get("articles", [])[:3]:
+            intl_news.append({
+                "title": article.get("title", ""),
+                "source": article.get("source", {}).get("name", "Unknown"),
+                "url": article.get("url", "")
+            })
+except Exception as e:
+    print(f"International news fetch error: {e}")
+
+if not dutch_news:
+    dutch_news = [{"title": "Nederlandse nieuws niet beschikbaar.", "source": "", "url": ""}]
+if not intl_news:
+    intl_news = [{"title": "Internationaal nieuws niet beschikbaar.", "source": "", "url": ""}]
 
 # STEP 5: Tasks
 print("[STEP 5] Loading tasks...")
@@ -115,13 +143,17 @@ if tasks_file.exists():
     except Exception as e:
         print(f"Error reading tasks: {e}")
 
-# STEP 6: Birthdays (from Input/birthdays.json)
+# STEP 6: Birthdays (from Google Calendar all-day events or events with 'jarig'/'verjaardag')
 print("[STEP 6] Checking birthdays...")
 birthdays = []
+# Note: In full implementation with Google Calendar MCP, search for:
+# - All-day events on today's date
+# - Events with 'jarig' or 'verjaardag' in description/title
+# For now, check local file as fallback
 birthdays_file = INPUT_FOLDER / "birthdays.json"
 if birthdays_file.exists():
     try:
-        with open(birthdays_file) as f:
+        with open(birthdays_file, encoding='utf-8') as f:
             all_birthdays = json.load(f)
             for person in all_birthdays:
                 bday = person.get("date", "")
@@ -138,11 +170,11 @@ meetings = []
 print("[STEP 8] Generating HTML...")
 
 html_content = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Good Morning, Paul</title>
+    <title>Goedemorgen Paul</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }}
@@ -196,19 +228,19 @@ html_content = f"""<!DOCTYPE html>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Good Morning, Paul ☀️</h1>
+            <h1>Goedemorgen Paul ☀️</h1>
             <p>{FULLDATE}</p>
         </div>
 
         <div class="section weather-section">
-            <h2>🌤 Weather — Almere-Buiten</h2>
+            <h2>🌤 Weer — Almere-Buiten</h2>
             <div class="weather">{weather_short}
 
 {weather_full}</div>
         </div>
 
         <div class="section habits-section">
-            <h2>✅ Daily Habits</h2>
+            <h2>✅ Dagelijkse Gewoonten</h2>
             <div>
 """
 
@@ -217,7 +249,7 @@ for habit in habits:
                     <input type="checkbox" class="habit-checkbox">
                     <span class="habit-icon">{habit.get('icon', '•')}</span>
                     <div class="habit-info">
-                        <div class="habit-name">{habit.get('name', 'Habit')}</div>
+                        <div class="habit-name">{habit.get('name', 'Gewoonte')}</div>
                         <div class="habit-target">{habit.get('target', '')}</div>
                     </div>
                 </div>
@@ -227,17 +259,34 @@ html_content += """            </div>
         </div>
 
         <div class="section quote-section">
-            <h2>💡 Thought for Today</h2>
+            <h2>💡 Gedachte van de Dag</h2>
             <div class="quote">"{{quote}}"</div>
             <div class="quote-author">— {{author}}</div>
         </div>
 
         <div class="section news-section">
-            <h2>📰 Today's Headlines</h2>
+            <h2>📰 Nederlands Nieuws</h2>
             <div>
 """.replace("{{quote}}", quote).replace("{{author}}", author)
 
-for item in news_items:
+for item in dutch_news:
+    url = item.get("url", "#")
+    title = item.get("title", "")
+    source = item.get("source", "")
+    if url and url != "#":
+        html_content += f'                <div class="news-item"><a href="{url}" target="_blank" class="news-title">{title}</a><div class="news-source">{source}</div></div>\n'
+    else:
+        html_content += f'                <div class="news-item"><div class="news-title">{title}</div><div class="news-source">{source}</div></div>\n'
+
+html_content += """            </div>
+        </div>
+
+        <div class="section news-section">
+            <h2>🌍 Internationaal Nieuws</h2>
+            <div>
+"""
+
+for item in intl_news:
     url = item.get("url", "#")
     title = item.get("title", "")
     source = item.get("source", "")
@@ -252,7 +301,7 @@ html_content += """            </div>
 
 if birthdays:
     html_content += """        <div class="section birthdays-section">
-            <h2>🎂 Birthdays Today</h2>
+            <h2>🎂 Verjaardagen Vandaag</h2>
             <div>
 """
     for person in birthdays:
@@ -266,14 +315,14 @@ if birthdays:
 """
 else:
     html_content += """        <div class="section birthdays-section">
-            <h2>🎂 Birthdays Today</h2>
-            <div class="empty">No birthdays today.</div>
+            <h2>🎂 Verjaardagen Vandaag</h2>
+            <div class="empty">Geen verjaardagen vandaag.</div>
         </div>
 """
 
 if meetings:
     html_content += """        <div class="section meetings-section">
-            <h2>📅 Today's Meetings</h2>
+            <h2>📅 Vandaag's Vergaderingen</h2>
             <div>
 """
     for meeting in meetings:
@@ -283,14 +332,14 @@ if meetings:
 """
 else:
     html_content += """        <div class="section meetings-section">
-            <h2>📅 Today's Meetings</h2>
-            <div class="empty">No meetings scheduled.</div>
+            <h2>📅 Vandaag's Vergaderingen</h2>
+            <div class="empty">Geen vergaderingen ingepland.</div>
         </div>
 """
 
 if tasks:
     html_content += """        <div class="section tasks-section">
-            <h2>✅ Tasks</h2>
+            <h2>✅ Taken</h2>
             <div>
 """
     for task in tasks:
@@ -310,13 +359,13 @@ if tasks:
 """
 else:
     html_content += """        <div class="section tasks-section">
-            <h2>✅ Tasks</h2>
-            <div class="empty">No tasks due today.</div>
+            <h2>✅ Taken</h2>
+            <div class="empty">Geen taken voor vandaag.</div>
         </div>
 """
 
 html_content += f"""        <div class="footer">
-            PaulsMorningBrief · Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UTC
+            PaulsMorningBrief · Gegenereerd op {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UTC
         </div>
     </div>
 </body>
@@ -327,7 +376,7 @@ html_content += f"""        <div class="footer">
 with open(HTML_FILE, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"✓ HTML brief created: {HTML_FILE}")
+print(f"[OK] HTML brief created: {HTML_FILE}")
 
 # STEP 9: Git operations
 print("\n[STEP 9] Committing and pushing to GitHub...")
@@ -337,12 +386,12 @@ try:
     subprocess.run(["git", "add", "PMB/"], check=True)
     subprocess.run(["git", "commit", "-m", f"Morning Brief {TODAY}"], check=True)
     subprocess.run(["git", "push", "origin", "master"], check=True)
-    print("✓ Files pushed to GitHub (master branch)")
+    print("[OK] Files pushed to GitHub (master branch)")
 except subprocess.CalledProcessError as e:
     print(f"Git error: {e}")
 
-print(f"\n✓ Morning brief complete for {TODAY}")
-print(f"✓ Output: {HTML_FILE}")
+print(f"\n[OK] Morning brief complete for {TODAY}")
+print(f"[OK] Output: {HTML_FILE}")
 print("\nTo sync to local folder:")
 print("  cd C:\\Users\\Paul\\Claude\\PMB")
 print("  git pull")
