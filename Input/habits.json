@@ -1,0 +1,6 @@
+[
+  { "name": "Exercise", "target": "30 min", "icon": "🏃" },
+  { "name": "Drink water", "target": "8 glasses", "icon": "💧" },
+  { "name": "Meditation", "target": "10 min", "icon": "🧘" },
+  { "name": "Read", "target": "20 pages", "icon": "📖" }
+]

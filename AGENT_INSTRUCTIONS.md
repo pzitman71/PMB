@@ -30,7 +30,25 @@ Note: GitHub OAuth is handled by Claude Code's remote agent system automatically
 
 ---
 
-## STEP 3 — Weather forecast
+## STEP 3 — Habits
+
+Read `Input/habits.json` to load today's habits to track. Format:
+```json
+[
+  { "name": "Exercise", "target": "30 min", "icon": "🏃" },
+  { "name": "Drink water", "target": "8 glasses", "icon": "💧" },
+  { "name": "Meditation", "target": "10 min", "icon": "🧘" },
+  { "name": "Read", "target": "20 pages", "icon": "📖" }
+]
+```
+
+If the file does not exist, create it with the above template and continue.
+Each habit will be displayed in the HTML brief with its icon, name, and target.
+All habits start unchecked — Paul marks them done manually or via tracking apps later.
+
+---
+
+## STEP 4 — Weather forecast
 
 ```bash
 WEATHER_SHORT=$(curl -s "https://wttr.in/Almere-Buiten?format=%l:+%C,+%t+(feels+like+%f),+wind+%w,+humidity+%h")
@@ -43,7 +61,7 @@ Save both outputs for use in the HTML brief.
 
 ---
 
-## STEP 4 — Birthdays
+## STEP 5 — Birthdays
 
 Use the Google Calendar MCP tools to find today's birthdays.
 Query the **Birthdays** calendar (it exists in both pzitman@gmail.com and paul.zitman@devoteam.com — check both).
@@ -116,7 +134,7 @@ print(f"GIF saved: {out}")
 
 ---
 
-## STEP 4.5 — News headlines
+## STEP 6 — News headlines
 
 Fetch top headlines for the Netherlands using the free Zenquotes-inspired approach or NewsAPI.
 
@@ -136,7 +154,7 @@ If fetching fails, note: "News: temporarily unavailable."
 
 ---
 
-## STEP 5 — Tasks
+## STEP 7 — Tasks
 
 Read `Input/tasks.json` if it exists. Format:
 ```json
@@ -152,7 +170,7 @@ If the file does not exist, note "No tasks file found."
 
 ---
 
-## STEP 6 — Calendar events
+## STEP 8 — Calendar events
 
 Check your available tools. If Google Calendar MCP tools are present:
 - Query **pzitman@gmail.com** for all events today.
@@ -165,7 +183,7 @@ If calendar MCP tools are not available, write:
 
 ---
 
-## STEP 7 — Create the HTML morning brief
+## STEP 9 — Create the HTML morning brief
 
 Create the output directory and write the HTML file:
 
@@ -185,6 +203,13 @@ All CSS must be inline (no external files). The design must be professional and 
 **Section: Weather** — left border `#0057A8`, heading "🌤 Weather — Almere-Buiten"
 - Show `$WEATHER_SHORT` on one line
 - Show `$WEATHER_FULL` in a `<pre>` block with monospace font
+
+**Section: Daily Habits** — left border `#9C27B0`, heading "✅ Daily Habits"
+- Read habits from Input/habits.json (or use default template if missing)
+- Display each habit as: [unchecked checkbox] `icon` **Habit Name** — target
+- Example: `☐ 🏃 Exercise — 30 min`
+- All habits start unchecked (Paul marks them done manually as the day progresses)
+- If no habits file, show default habits with instructions to customize
 
 **Section: News** — left border `#FF6B6B`, heading "📰 Today's Headlines"
 - List up to 5 news headlines (from Step 4.5)
@@ -215,7 +240,7 @@ All CSS must be inline (no external files). The design must be professional and 
 
 ---
 
-## STEP 8 — Commit and push
+## STEP 10 — Commit and push
 
 ```bash
 git add PMB/
