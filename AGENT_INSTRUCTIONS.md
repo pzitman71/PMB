@@ -259,19 +259,19 @@ All CSS must be inline (no external files). The design must be professional and 
 
 ---
 
-## STEP 10 — Open in browser
+## STEP 10 — List generated files
 
-Open the generated HTML file in the default browser:
+After creating the morning brief, print the names of files generated:
 
 ```bash
-open "PMB/${TODAY}_morning_brief.html" 2>/dev/null || xdg-open "PMB/${TODAY}_morning_brief.html" 2>/dev/null || start "PMB/${TODAY}_morning_brief.html" 2>/dev/null || echo "File ready: PMB/${TODAY}_morning_brief.html"
+ls -lh "PMB/${TODAY}"* 2>/dev/null | awk '{print $NF}'
 ```
 
-This will attempt to open the file across Windows, macOS, and Linux. If it fails, the path is printed so you know where to find it.
+This prints the files that were created and are ready to be pushed to GitHub.
 
 ---
 
-## STEP 11 — Commit and push
+## STEP 11 — Commit and push to GitHub
 
 ```bash
 git add PMB/
@@ -280,5 +280,7 @@ git commit -m "Morning Brief $TODAY"
 git push origin HEAD
 ```
 
-After pushing, print:
-"Morning brief complete for $TODAY — [list what sections were included and any notable content]"
+After pushing successfully, print a summary:
+"Morning brief complete for $TODAY — [list sections: weather, news, habits, quote, birthdays, meetings, tasks. Mention any highlights like number of meetings or if it's someone's birthday.]"
+
+Note: Files are now on GitHub. Pull them to your local `C:\Users\Paul\Claude\PMB\` with `git pull`.
