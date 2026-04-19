@@ -55,6 +55,10 @@ try:
     if result.returncode == 0 and result.stdout:
         english_weather = result.stdout.decode('utf-8', errors='replace').strip()
 
+        # Add space before wind speed (e.g. "↓24km/h" → "↓ 24km/h")
+        import re
+        english_weather = re.sub(r'(↓|↑|→|←|↘|↙|↗|↖)(\d)', r'\1 \2', english_weather)
+
         # Translate weather conditions to Dutch
         translations = {
             "Partly cloudy": "Bewolkt",
