@@ -1,0 +1,36 @@
+name: PaulsMorningBrief
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # 4 AM UTC (6 AM summer, 5 AM winter Amsterdam time)
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+jobs:
+  generate-brief:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Generate morning brief
+        run: python3 pmb_agent.py
+
+      - name: Commit and push changes
+        run: |
+          git config user.email "pmb-agent@morningbrief.local"
+          git config user.name "PaulsMorningBrief Agent"
+          git add PMB/
+          if ! git diff --cached --quiet; then
+            git commit -m "Morning Brief $(date +%Y-%m-%d)"
+            git push origin HEAD
+          else
+            echo "No changes to commit"
+          fi
