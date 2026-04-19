@@ -2,6 +2,5 @@
   { "name": "Run", "target": "12km (90 min)", "icon": "🏃" },
   { "name": "Bike", "target": "12km (45 min)", "icon": "🚴" },
   { "name": "Drink water", "target": "8 glasses", "icon": "💧" },
-  { "name": "Meditation", "target": "10 min", "icon": "🧘" },
   { "name": "Read", "target": "20 pages", "icon": "📖" }
 ]
