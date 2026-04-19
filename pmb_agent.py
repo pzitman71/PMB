@@ -79,15 +79,16 @@ try:
         # Capitalize location name
         weather_short = weather_short.replace("almere-buiten:", "Almere-Buiten:")
 
-        # Fix spacing around wind direction and speed
-        weather_short = weather_short.replace("↓ (Zuid)24", "↓ (Zuid) 24")
-        weather_short = weather_short.replace("↑ (Noord)24", "↑ (Noord) 24")
-        weather_short = weather_short.replace("→ (Oost)24", "→ (Oost) 24")
-        weather_short = weather_short.replace("← (West)24", "← (West) 24")
-        weather_short = weather_short.replace("↘ (Zuidoost)24", "↘ (Zuidoost) 24")
-        weather_short = weather_short.replace("↙ (Zuidwest)24", "↙ (Zuidwest) 24")
-        weather_short = weather_short.replace("↗ (Noordoost)24", "↗ (Noordoost) 24")
-        weather_short = weather_short.replace("↖ (Noordwest)24", "↖ (Noordwest) 24")
+        # Fix spacing around wind direction and speed (fix all numbers)
+        import re
+        weather_short = re.sub(r'↓\s*\((Zuid)\)(\d)', r'↓ (Zuid) \2', weather_short)
+        weather_short = re.sub(r'↑\s*\((Noord)\)(\d)', r'↑ (Noord) \2', weather_short)
+        weather_short = re.sub(r'→\s*\((Oost)\)(\d)', r'→ (Oost) \2', weather_short)
+        weather_short = re.sub(r'←\s*\((West)\)(\d)', r'← (West) \2', weather_short)
+        weather_short = re.sub(r'↘\s*\((Zuidoost)\)(\d)', r'↘ (Zuidoost) \2', weather_short)
+        weather_short = re.sub(r'↙\s*\((Zuidwest)\)(\d)', r'↙ (Zuidwest) \2', weather_short)
+        weather_short = re.sub(r'↗\s*\((Noordoost)\)(\d)', r'↗ (Noordoost) \2', weather_short)
+        weather_short = re.sub(r'↖\s*\((Noordwest)\)(\d)', r'↖ (Noordwest) \2', weather_short)
 
         print(f"Weer: {weather_short}")
 except Exception as e:
