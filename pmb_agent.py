@@ -174,159 +174,31 @@ if tasks_file.exists():
     except Exception as e:
         print(f"Error reading tasks: {e}")
 
-# STEP 6: Birthdays (from Google Calendar events containing 'jarig', 'verjaardag', or 'birthday')
+# STEP 6: Birthdays (from local file)
 print("[STEP 6] Checking birthdays...")
 birthdays = []
+# Note: Google Calendar integration requires direct API access or a different agent architecture
+# For now, use local birthdays.json file
+birthdays_file = INPUT_FOLDER / "birthdays.json"
+if birthdays_file.exists():
+    try:
+        with open(birthdays_file, encoding='utf-8') as f:
+            all_birthdays = json.load(f)
+            for person in all_birthdays:
+                bday = person.get("date", "")
+                if bday and bday[5:] == TODAY[5:]:  # Match month-day
+                    birthdays.append(person)
+        if birthdays:
+            print(f"Found {len(birthdays)} birthday(s) in local file")
+    except Exception as e:
+        print(f"Error reading birthdays: {e}")
 
-try:
-    import anthropic
-    import json as json_module
-
-    client = anthropic.Anthropic()
-
-    # Use Claude with tool_use to fetch calendar events
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1024,
-        tools=[
-            {
-                "type": "builtin_tool",
-                "name": "google_calendar_list_events",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "calendar_id": {"type": "string"},
-                        "time_min": {"type": "string"},
-                        "time_max": {"type": "string"}
-                    },
-                    "required": ["calendar_id", "time_min", "time_max"]
-                }
-            }
-        ],
-        messages=[
-            {
-                "role": "user",
-                "content": f"List all events from calendar paul.zitman@devoteam.com for today ({TODAY}) in ISO format. Return only valid JSON with the events list."
-            }
-        ]
-    )
-
-    # Parse response for calendar events
-    if response.content:
-        for block in response.content:
-            if hasattr(block, 'text'):
-                try:
-                    # Try to extract JSON from response
-                    text = block.text
-                    # Look for JSON array in response
-                    if '[' in text and ']' in text:
-                        json_str = text[text.find('['):text.rfind(']')+1]
-                        events_data = json_module.loads(json_str)
-
-                        for event in events_data:
-                            # Check if it's an all-day event with birthday keywords
-                            is_allday = event.get('start', {}).get('date') is not None
-                            title = event.get('summary', '').lower()
-                            description = event.get('description', '').lower() if event.get('description') else ''
-
-                            birthday_keywords = ['jarig', 'verjaardag', 'birthday']
-                            has_birthday_keyword = any(kw in title or kw in description for kw in birthday_keywords)
-
-                            if is_allday and has_birthday_keyword:
-                                name = event.get('summary', '').replace("'s birthday", "").replace("'s verjaardag", "").strip()
-                                birthdays.append({"name": name})
-
-                        if birthdays:
-                            print(f"Found {len(birthdays)} birthday(s) in Google Calendar")
-                except Exception as parse_err:
-                    print(f"Could not parse calendar response: {parse_err}")
-
-except Exception as e:
-    print(f"Google Calendar query failed: {e}")
-
-# Fall back to local birthdays file if no Google Calendar results
-if not birthdays:
-    birthdays_file = INPUT_FOLDER / "birthdays.json"
-    if birthdays_file.exists():
-        try:
-            with open(birthdays_file, encoding='utf-8') as f:
-                all_birthdays = json.load(f)
-                for person in all_birthdays:
-                    bday = person.get("date", "")
-                    if bday and bday[5:] == TODAY[5:]:  # Match month-day
-                        birthdays.append(person)
-        except Exception as e:
-            print(f"Error reading birthdays: {e}")
-
-# STEP 7: Calendar events from paul.zitman@devoteam.com
-print("[STEP 7] Fetching calendar events from paul.zitman@devoteam.com...")
+# STEP 7: Calendar events from local file
+print("[STEP 7] Loading calendar events...")
 meetings = []
-
-try:
-    import anthropic
-    import json as json_module
-
-    client = anthropic.Anthropic()
-
-    # Use Claude with tool_use to fetch calendar events
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2048,
-        tools=[
-            {
-                "type": "builtin_tool",
-                "name": "google_calendar_list_events",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "calendar_id": {"type": "string"},
-                        "time_min": {"type": "string"},
-                        "time_max": {"type": "string"}
-                    },
-                    "required": ["calendar_id", "time_min", "time_max"]
-                }
-            }
-        ],
-        messages=[
-            {
-                "role": "user",
-                "content": f"List all NON-ALLDAY events from calendar paul.zitman@devoteam.com for today ({TODAY}). Return as JSON array with event start time (HH:MM), summary, and location."
-            }
-        ]
-    )
-
-    # Parse response for calendar events
-    if response.content:
-        for block in response.content:
-            if hasattr(block, 'text'):
-                try:
-                    text = block.text
-                    # Look for JSON array in response
-                    if '[' in text and ']' in text:
-                        json_str = text[text.find('['):text.rfind(']')+1]
-                        events_data = json_module.loads(json_str)
-
-                        for event in events_data:
-                            time_str = event.get('time', event.get('start', ''))
-                            title = event.get('summary', event.get('title', 'Untitled'))
-                            location = event.get('location', '')
-
-                            meeting_str = f"{time_str} — {title}"
-                            if location:
-                                meeting_str += f" @ {location}"
-
-                            meetings.append(meeting_str)
-
-                        # Sort meetings by time
-                        meetings.sort()
-
-                        if meetings:
-                            print(f"Found {len(meetings)} meeting(s) in Google Calendar")
-                except Exception as parse_err:
-                    print(f"Could not parse calendar events: {parse_err}")
-
-except Exception as e:
-    print(f"Calendar events query failed: {e}")
+# Note: Google Calendar integration requires direct API access or a different agent architecture
+# For now, use local tasks.json file which could include calendar references
+# In future, use Google Calendar API with proper authentication or restructure as a Claude agent
 
 # STEP 8: Generate HTML
 print("[STEP 8] Generating HTML...")
