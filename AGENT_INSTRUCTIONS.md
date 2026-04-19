@@ -154,6 +154,25 @@ If fetching fails, note: "News: temporarily unavailable."
 
 ---
 
+## STEP 6.5 — Motivational quote
+
+Fetch a random quote using the free Quotable API:
+
+```bash
+QUOTE=$(curl -s 'https://api.quotable.io/random' | jq -r '.content' 2>/dev/null)
+AUTHOR=$(curl -s 'https://api.quotable.io/random' | jq -r '.author' 2>/dev/null)
+```
+
+If the API call fails, fall back to a local default:
+```bash
+QUOTE="${QUOTE:-"The only way to do great work is to love what you do." — Steve Jobs}"
+AUTHOR="${AUTHOR:-}"
+```
+
+Save both `$QUOTE` and `$AUTHOR` for use in the HTML brief.
+
+---
+
 ## STEP 7 — Tasks
 
 Read `Input/tasks.json` if it exists. Format:
@@ -212,10 +231,16 @@ All CSS must be inline (no external files). The design must be professional and 
 - If no habits file, show default habits with instructions to customize
 
 **Section: News** — left border `#FF6B6B`, heading "📰 Today's Headlines"
-- List up to 5 news headlines (from Step 4.5)
+- List up to 5 news headlines (from Step 6)
 - Each as a clickable link (if URL available) or plain text
 - Show source (e.g., "BBC", "Reuters") in smaller grey text below the headline
 - If news unavailable, show: "Headlines temporarily unavailable."
+
+**Section: Thought for Today** — left border `#4CAF50`, heading "💡 Thought for Today"
+- Display the quote in italic text, centered
+- Show author below the quote in smaller, grey text (if available)
+- If quote fetch failed, show the default fallback quote
+- Styling: soft background color (`#F0F8F5`), padding, rounded corners
 
 **Section: Birthdays** — left border `#C9A800`, heading "🎂 Birthdays Today"
 - If no birthdays: show "No birthdays today."
