@@ -259,7 +259,19 @@ All CSS must be inline (no external files). The design must be professional and 
 
 ---
 
-## STEP 10 — Commit and push
+## STEP 10 — Open in browser
+
+Open the generated HTML file in the default browser:
+
+```bash
+open "PMB/${TODAY}_morning_brief.html" 2>/dev/null || xdg-open "PMB/${TODAY}_morning_brief.html" 2>/dev/null || start "PMB/${TODAY}_morning_brief.html" 2>/dev/null || echo "File ready: PMB/${TODAY}_morning_brief.html"
+```
+
+This will attempt to open the file across Windows, macOS, and Linux. If it fails, the path is printed so you know where to find it.
+
+---
+
+## STEP 11 — Commit and push
 
 ```bash
 git add PMB/
