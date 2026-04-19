@@ -45,21 +45,21 @@ print(f"Generating morning brief for {FULLDATE}...")
 
 # STEP 1: Weather
 print("[STEP 1] Fetching weather...")
-weather_short = "Weather unavailable"
-weather_full = "Unable to fetch forecast"
+weather_short = "Weer niet beschikbaar"
+weather_full = "Prognose kan niet worden opgehaald"
 try:
     result = subprocess.run(
         ["curl", "-s", "https://wttr.in/Almere-Buiten?format=%l:+%C,+%t+(feels+like+%f),+wind+%w,+humidity+%h"],
-        capture_output=True, text=True, timeout=5
+        capture_output=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout and result.stdout.strip():
-        weather_short = result.stdout.strip()
+    if result.returncode == 0 and result.stdout:
+        weather_short = result.stdout.decode('utf-8', errors='replace').strip()
     result2 = subprocess.run(
         ["curl", "-s", "https://wttr.in/Almere-Buiten?1"],
-        capture_output=True, text=True, timeout=5
+        capture_output=True, timeout=5
     )
-    if result2.returncode == 0 and result2.stdout and result2.stdout.strip():
-        weather_full = result2.stdout.strip()
+    if result2.returncode == 0 and result2.stdout:
+        weather_full = result2.stdout.decode('utf-8', errors='replace').strip()
 except Exception as e:
     print(f"Weather fetch error: {e}")
 
@@ -94,10 +94,10 @@ author = "Steve Jobs"
 try:
     result = subprocess.run(
         ["curl", "-s", "https://api.quotable.io/random"],
-        capture_output=True, text=True, timeout=5
+        capture_output=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout and result.stdout.strip():
-        data = json.loads(result.stdout)
+    if result.returncode == 0 and result.stdout:
+        data = json.loads(result.stdout.decode('utf-8', errors='replace'))
         quote = data.get("content", quote)
         author = data.get("author", author)
 except Exception as e:
@@ -112,10 +112,10 @@ try:
     # Dutch news
     result = subprocess.run(
         ["curl", "-s", "https://newsapi.org/v2/top-headlines?country=nl&sortBy=popularity&pageSize=3"],
-        capture_output=True, text=True, timeout=5
+        capture_output=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout and result.stdout.strip():
-        data = json.loads(result.stdout)
+    if result.returncode == 0 and result.stdout:
+        data = json.loads(result.stdout.decode('utf-8', errors='replace'))
         for article in data.get("articles", [])[:3]:
             dutch_news.append({
                 "title": article.get("title", ""),
@@ -129,10 +129,10 @@ try:
     # International news
     result = subprocess.run(
         ["curl", "-s", "https://newsapi.org/v2/top-headlines?language=en&sortBy=popularity&pageSize=3"],
-        capture_output=True, text=True, timeout=5
+        capture_output=True, timeout=5
     )
-    if result.returncode == 0 and result.stdout and result.stdout.strip():
-        data = json.loads(result.stdout)
+    if result.returncode == 0 and result.stdout:
+        data = json.loads(result.stdout.decode('utf-8', errors='replace'))
         for article in data.get("articles", [])[:3]:
             intl_news.append({
                 "title": article.get("title", ""),
