@@ -143,11 +143,11 @@ if tasks_file.exists():
     except Exception as e:
         print(f"Error reading tasks: {e}")
 
-# STEP 6: Birthdays (from Google Calendar events containing 'jarig' or 'verjaardag')
+# STEP 6: Birthdays (from Google Calendar events containing 'jarig', 'verjaardag', or 'birthday')
 print("[STEP 6] Checking birthdays...")
 birthdays = []
 # Note: In full implementation with Google Calendar MCP, search for:
-# - Events with 'jarig' or 'verjaardag' in title or description (any type of event)
+# - Events with 'jarig', 'verjaardag', or 'birthday' in title or description (any type of event)
 # For now, check local file as fallback
 birthdays_file = INPUT_FOLDER / "birthdays.json"
 if birthdays_file.exists():
