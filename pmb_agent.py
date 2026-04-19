@@ -43,10 +43,9 @@ HTML_FILE = PMB_FOLDER / f"{TODAY}_morning_brief.html"
 
 print(f"Generating morning brief for {FULLDATE}...")
 
-# STEP 1: Weather
+# STEP 1: Weather (short format only, no ASCII art)
 print("[STEP 1] Fetching weather...")
 weather_short = "Weer niet beschikbaar"
-weather_full = "Prognose kan niet worden opgehaald"
 try:
     result = subprocess.run(
         ["curl", "-s", "https://wttr.in/Almere-Buiten?format=%l:+%C,+%t+(feels+like+%f),+wind+%w,+humidity+%h"],
@@ -54,12 +53,7 @@ try:
     )
     if result.returncode == 0 and result.stdout:
         weather_short = result.stdout.decode('utf-8', errors='replace').strip()
-    result2 = subprocess.run(
-        ["curl", "-s", "https://wttr.in/Almere-Buiten?1"],
-        capture_output=True, timeout=5
-    )
-    if result2.returncode == 0 and result2.stdout:
-        weather_full = result2.stdout.decode('utf-8', errors='replace').strip()
+        print(f"Weather: {weather_short}")
 except Exception as e:
     print(f"Weather fetch error: {e}")
 
@@ -103,47 +97,54 @@ try:
 except Exception as e:
     print(f"Quote fetch error: {e}")
 
-# STEP 4: News (Dutch + International)
+# STEP 4: News (Dutch + International) - using BBC and NOS RSS
 print("[STEP 4] Fetching news headlines...")
 dutch_news = []
 intl_news = []
 
 try:
-    # Dutch news
+    # Dutch news from NOS
     result = subprocess.run(
-        ["curl", "-s", "https://newsapi.org/v2/top-headlines?country=nl&sortBy=popularity&pageSize=3"],
+        ["curl", "-s", "https://feeds.nos.nl/nosnieuwsalgemeen"],
         capture_output=True, timeout=5
     )
     if result.returncode == 0 and result.stdout:
-        data = json.loads(result.stdout.decode('utf-8', errors='replace'))
-        for article in data.get("articles", [])[:3]:
-            dutch_news.append({
-                "title": article.get("title", ""),
-                "source": article.get("source", {}).get("name", "Unknown"),
-                "url": article.get("url", "")
-            })
+        content = result.stdout.decode('utf-8', errors='replace')
+        # Simple XML parsing for title tags
+        import re
+        titles = re.findall(r'<title>([^<]+)</title>', content)
+        for title in titles[1:4]:  # Skip feed title, get first 3 articles
+            if title and len(title) > 10:
+                dutch_news.append({
+                    "title": title,
+                    "source": "NOS",
+                    "url": ""
+                })
 except Exception as e:
     print(f"Dutch news fetch error: {e}")
 
 try:
-    # International news
+    # International news from BBC
     result = subprocess.run(
-        ["curl", "-s", "https://newsapi.org/v2/top-headlines?language=en&sortBy=popularity&pageSize=3"],
+        ["curl", "-s", "https://feeds.bbci.co.uk/news/rss.xml"],
         capture_output=True, timeout=5
     )
     if result.returncode == 0 and result.stdout:
-        data = json.loads(result.stdout.decode('utf-8', errors='replace'))
-        for article in data.get("articles", [])[:3]:
-            intl_news.append({
-                "title": article.get("title", ""),
-                "source": article.get("source", {}).get("name", "Unknown"),
-                "url": article.get("url", "")
-            })
+        content = result.stdout.decode('utf-8', errors='replace')
+        import re
+        titles = re.findall(r'<title>([^<]+)</title>', content)
+        for title in titles[1:4]:  # Skip feed title, get first 3 articles
+            if title and len(title) > 10:
+                intl_news.append({
+                    "title": title,
+                    "source": "BBC",
+                    "url": ""
+                })
 except Exception as e:
     print(f"International news fetch error: {e}")
 
 if not dutch_news:
-    dutch_news = [{"title": "Nederlandse nieuws niet beschikbaar.", "source": "", "url": ""}]
+    dutch_news = [{"title": "Nederlands nieuws niet beschikbaar.", "source": "", "url": ""}]
 if not intl_news:
     intl_news = [{"title": "Internationaal nieuws niet beschikbaar.", "source": "", "url": ""}]
 
@@ -253,9 +254,7 @@ html_content = f"""<!DOCTYPE html>
 
         <div class="section weather-section">
             <h2>🌤 Weer — Almere-Buiten</h2>
-            <div class="weather">{weather_short}
-
-{weather_full}</div>
+            <div class="weather">{weather_short}</div>
         </div>
 
         <div class="section habits-section">
