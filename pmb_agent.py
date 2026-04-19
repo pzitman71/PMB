@@ -177,29 +177,115 @@ if tasks_file.exists():
 # STEP 6: Birthdays (from Google Calendar events containing 'jarig', 'verjaardag', or 'birthday')
 print("[STEP 6] Checking birthdays...")
 birthdays = []
-# Note: In full implementation with Google Calendar MCP, search for:
-# - Events with 'jarig', 'verjaardag', or 'birthday' in title or description (any type of event)
-# For now, check local file as fallback
-birthdays_file = INPUT_FOLDER / "birthdays.json"
-if birthdays_file.exists():
+
+# Try Google Calendar MCP first
+try:
+    import anthropic
+    client = anthropic.Anthropic()
+
+    # Query paul.zitman@devoteam.com for birthday/anniversary events
+    # Look for all-day events and events with birthday keywords in title or description
     try:
-        with open(birthdays_file, encoding='utf-8') as f:
-            all_birthdays = json.load(f)
-            for person in all_birthdays:
-                bday = person.get("date", "")
-                if bday and bday[5:] == TODAY[5:]:  # Match month-day
-                    birthdays.append(person)
+        # Use list_events to get all events for today
+        events_response = client.beta.tools.google_calendar.list_events(
+            calendar_id="paul.zitman@devoteam.com",
+            time_min=f"{TODAY}T00:00:00Z",
+            time_max=f"{TODAY}T23:59:59Z",
+            all_events=True
+        )
+
+        if events_response and hasattr(events_response, 'items'):
+            for event in events_response.items:
+                # Check if it's an all-day event or has birthday keywords
+                is_allday = event.get('start', {}).get('date') is not None
+                title = event.get('summary', '').lower()
+                description = event.get('description', '').lower() if event.get('description') else ''
+
+                birthday_keywords = ['jarig', 'verjaardag', 'birthday']
+                has_birthday_keyword = any(kw in title or kw in description for kw in birthday_keywords)
+
+                # Only include birthday events (all-day with birthday keywords)
+                if is_allday and has_birthday_keyword:
+                    name = event.get('summary', '').replace("'s birthday", "").replace("'s verjaardag", "").strip()
+                    birthdays.append({"name": name})
+
+        if birthdays:
+            print(f"Found {len(birthdays)} birthday(s) in Google Calendar")
     except Exception as e:
-        print(f"Error reading birthdays: {e}")
+        print(f"Google Calendar birthday query failed: {e}, falling back to local file")
+
+except ImportError:
+    print("Anthropic SDK not available, will use local birthdays file")
+except Exception as e:
+    print(f"Google Calendar API error: {e}")
+
+# Fall back to local birthdays file if no Google Calendar results
+if not birthdays:
+    birthdays_file = INPUT_FOLDER / "birthdays.json"
+    if birthdays_file.exists():
+        try:
+            with open(birthdays_file, encoding='utf-8') as f:
+                all_birthdays = json.load(f)
+                for person in all_birthdays:
+                    bday = person.get("date", "")
+                    if bday and bday[5:] == TODAY[5:]:  # Match month-day
+                        birthdays.append(person)
+        except Exception as e:
+            print(f"Error reading birthdays: {e}")
 
 # STEP 7: Calendar events from paul.zitman@devoteam.com
 print("[STEP 7] Fetching calendar events from paul.zitman@devoteam.com...")
-# Note: In full implementation with Google Calendar MCP, query paul.zitman@devoteam.com
-# for all events today and any weather-related events
 meetings = []
-# TODO: When Google Calendar MCP is available, query for:
-# - All events for the day
-# - Weather-related events (if any) to supplement wttr.in data
+
+try:
+    import anthropic
+    client = anthropic.Anthropic()
+
+    # Query paul.zitman@devoteam.com for all events today
+    try:
+        events_response = client.beta.tools.google_calendar.list_events(
+            calendar_id="paul.zitman@devoteam.com",
+            time_min=f"{TODAY}T00:00:00Z",
+            time_max=f"{TODAY}T23:59:59Z"
+        )
+
+        if events_response and hasattr(events_response, 'items'):
+            for event in events_response.items:
+                # Skip all-day events (birthdays handled separately)
+                start = event.get('start', {})
+                if start.get('date'):  # All-day event
+                    continue
+
+                # Get event details
+                start_time = start.get('dateTime', '')
+                end_time = event.get('end', {}).get('dateTime', '')
+                title = event.get('summary', 'Untitled')
+                location = event.get('location', '')
+
+                # Extract time from ISO format (HH:MM)
+                if start_time:
+                    start_hm = start_time.split('T')[1][:5] if 'T' in start_time else start_time
+                else:
+                    start_hm = ''
+
+                meeting_str = f"{start_hm} — {title}"
+                if location:
+                    meeting_str += f" @ {location}"
+
+                meetings.append(meeting_str)
+
+            # Sort by start time
+            meetings.sort()
+
+            if meetings:
+                print(f"Found {len(meetings)} meeting(s) in Google Calendar")
+    except Exception as e:
+        print(f"Google Calendar events query failed: {e}")
+
+except ImportError:
+    print("Anthropic SDK not available for calendar events")
+except Exception as e:
+    print(f"Calendar API error: {e}")
 
 # STEP 8: Generate HTML
 print("[STEP 8] Generating HTML...")
