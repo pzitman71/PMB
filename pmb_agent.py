@@ -67,22 +67,27 @@ try:
             "Snow": "Sneeuw",
             "Thunderstorm": "Onweer",
             "Foggy": "Mistig",
-            "Windy": "Winderig"
+            "Windy": "Winderig",
+            "feels like": "Gevoelstemperatuur",
+            "humidity": "Luchtvochtigheid"
         }
 
         weather_short = english_weather
         for en, nl in translations.items():
             weather_short = weather_short.replace(en, nl)
 
-        # Translate direction indicators
-        weather_short = weather_short.replace("↑", "↑ (Noord)")
-        weather_short = weather_short.replace("↘", "↘ (Zuidoost)")
-        weather_short = weather_short.replace("↓", "↓ (Zuid)")
-        weather_short = weather_short.replace("↙", "↙ (Zuidwest)")
-        weather_short = weather_short.replace("→", "→ (Oost)")
-        weather_short = weather_short.replace("←", "← (West)")
-        weather_short = weather_short.replace("↗", "↗ (Noordoost)")
-        weather_short = weather_short.replace("↖", "↖ (Noordwest)")
+        # Capitalize location name
+        weather_short = weather_short.replace("almere-buiten:", "Almere-Buiten:")
+
+        # Fix spacing around wind direction and speed
+        weather_short = weather_short.replace("↓ (Zuid)24", "↓ (Zuid) 24")
+        weather_short = weather_short.replace("↑ (Noord)24", "↑ (Noord) 24")
+        weather_short = weather_short.replace("→ (Oost)24", "→ (Oost) 24")
+        weather_short = weather_short.replace("← (West)24", "← (West) 24")
+        weather_short = weather_short.replace("↘ (Zuidoost)24", "↘ (Zuidoost) 24")
+        weather_short = weather_short.replace("↙ (Zuidwest)24", "↙ (Zuidwest) 24")
+        weather_short = weather_short.replace("↗ (Noordoost)24", "↗ (Noordoost) 24")
+        weather_short = weather_short.replace("↖ (Noordwest)24", "↖ (Noordwest) 24")
 
         print(f"Weer: {weather_short}")
 except Exception as e:
